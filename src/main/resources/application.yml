@@ -1,0 +1,27 @@
+spring:
+application:
+name: coach
+
+datasource:
+url: jdbc:postgresql://localhost:5432/coach_db
+username: postgres
+password: xxx
+driver-class-name: org.postgresql.Driver
+
+jpa:
+hibernate:
+ddl-auto: update
+show-sql: true
+properties:
+hibernate:
+format_sql: true
+
+ai:
+openai:
+chat:
+base-url: https://openrouter.ai/api/v1
+
+api-key: ${OPENROUTER_API_KEY}
+options:
+
+model: meta-llama/llama-3-8b-instruct
