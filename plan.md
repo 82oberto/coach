@@ -49,7 +49,7 @@ The database utilizes the `snake_case` naming convention. Relationships are stri
 -- 1. User Profile
 CREATE TABLE user_profile (
     id BIGSERIAL PRIMARY KEY,
-    telegram_id VARCHAR(100) UNIQUE,          -- Unique client identifier (e.g., Telegram ID or Email)
+    user_id VARCHAR(100) UNIQUE,          -- Unique client identifier (e.g., user ID or Email)
     fitness_level INT NOT NULL,               -- Value from 1 to 5
     training_days_per_week INT NOT NULL,       -- Weekly frequency (2-7)
     available_time_minutes INT NOT NULL,       -- Single session duration limit

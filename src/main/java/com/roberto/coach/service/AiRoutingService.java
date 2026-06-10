@@ -42,7 +42,7 @@ public class AiRoutingService {
      * @return Un oggetto AiWorkoutJsonDto validato e tipizzato.
      */
     public AiWorkoutJsonDto generateWorkoutStructure(UserProfileDto userProfile, List<String> availableCatalogIds) {
-        log.info("Starting structured workout generation with Llama 3 for Telegram user: {}", userProfile.telegramId());
+        log.info("Starting structured workout generation with Llama 3 for user: {}", userProfile.userId());
 
         // 1. Definisce le regole di sistema (System Prompt) imponendo vincoli rigidi
         String systemInstruction = """

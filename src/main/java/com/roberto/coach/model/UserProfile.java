@@ -21,8 +21,8 @@ public class UserProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "telegram_id", unique = true, length = 100)
-    private String telegramId;
+    @Column(name = "user_id", unique = true, length = 100)
+    private String userId;
 
     @Column(name = "fitness_level", nullable = false)
     private int fitnessLevel;

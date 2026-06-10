@@ -9,5 +9,9 @@ import java.util.Optional;
 
 // 1. User Profile
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
-    Optional<UserProfile> findByTelegramId(String telegramId);
+    Optional<UserProfile> findByUserId(String userId);
+
+    boolean existsByUserId(String userId);
+
+    void deleteByUserId(String userId);
 }
