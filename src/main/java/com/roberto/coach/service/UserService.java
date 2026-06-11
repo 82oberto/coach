@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -54,11 +56,14 @@ public class UserService {
                     return newProfile;
                 });
 
+        List<String> equipments = new java.util.ArrayList<>(dto.equipment());
+        equipments.add("BODYWEIGHT");
+
         // Map updated fields from DTO to Entity
         userProfile.setFitnessLevel(dto.fitnessLevel());
         userProfile.setAvailableTimeMinutes(dto.availableTimeMinutes());
         userProfile.setPhysicalLimitations(dto.physicalLimitations());
-        userProfile.setEquipment(dto.equipment());
+        userProfile.setEquipment(equipments);
 
         UserProfile savedEntity = userRepository.save(userProfile);
         log.info("Successfully persisted profile changes for user ID: {}", dto.userId());

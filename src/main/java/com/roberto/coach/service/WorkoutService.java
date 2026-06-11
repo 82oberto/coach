@@ -1,6 +1,7 @@
 package com.roberto.coach.service;
 
 import com.roberto.coach.dto.AiWorkoutJsonDto;
+import com.roberto.coach.dto.UserProfileDto;
 import com.roberto.coach.dto.WorkoutResponseDto;
 import com.roberto.coach.model.UserProfile;
 import com.roberto.coach.model.WorkoutPlan;
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,14 +41,18 @@ public class WorkoutService {
         UserProfile userProfileEntity = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("UserProfile not found for ID: " + userId));
 
-        var userProfileDto = userService.findByUserId(userId);
+        UserProfileDto userProfileDto = userService.findByUserId(userId);
 
         List<String> availableCatalogIds = exerciseCatalogRepository.findAll().stream()
+                .filter(exercise -> userProfileDto.equipment().contains(exercise.getEquipmentNeeded()))
                 .map(ExerciseCatalog::getId)
                 .toList();
 
+        int targetExercises = calculateTargetExercises(userProfileEntity);
+        log.debug("Target exercises: {}", targetExercises);
+
         // 3. Generate content via AI Router
-        AiWorkoutJsonDto aiWorkoutDto = aiRoutingService.generateWorkoutStructure(userProfileDto, availableCatalogIds);
+        AiWorkoutJsonDto aiWorkoutDto = aiRoutingService.generateWorkoutStructure(userProfileDto, targetExercises, availableCatalogIds);
         String motivationalMessage = aiRoutingService.generateMotivationalMessage(userProfileDto);
 
         if (aiWorkoutDto.discoveredExercises() != null && !aiWorkoutDto.discoveredExercises().isEmpty()) {
@@ -76,10 +83,9 @@ public class WorkoutService {
         // 6. Map and resolve ExerciseCatalog dependencies safely
         List<WorkoutExercise> exerciseEntities = aiWorkoutDto.exercises().stream()
                 .map(aiExercise -> {
-                    // Ora vai a colpo sicuro: o l'esercizio esisteva già, o lo abbiamo appena salvato al Passo 4
                     ExerciseCatalog catalogEntity = exerciseCatalogRepository.findById(aiExercise.id())
                             .orElseThrow(() -> new IllegalStateException(
-                                    "Errore critico: L'ID " + aiExercise.id() + " non è presente nel database e l'AI non ha fornito i metadati in 'discovered_exercises'."
+                                    "Critical error: ID " + aiExercise.id() + " is not found in the database and the AI did not provide metadata in 'discovered_exercises'."
                             ));
 
                     return WorkoutExercise.builder()
@@ -119,5 +125,17 @@ public class WorkoutService {
                 savedPlan.getGeneratedAt() != null ? savedPlan.getGeneratedAt() : LocalDateTime.now(),
                 responseExercises
         );
+    }
+
+    public int calculateTargetExercises(UserProfile userProfile) {
+        BigDecimal modifier = (userProfile.getSpeedModifier() != null)
+                ? userProfile.getSpeedModifier()
+                : BigDecimal.valueOf(1.00);
+        BigDecimal availableTime = BigDecimal.valueOf(userProfile.getAvailableTimeMinutes());
+        BigDecimal averageMinutesPerExercise = BigDecimal.valueOf(8.0);
+        BigDecimal baseExercises = availableTime.divide(averageMinutesPerExercise, 2, RoundingMode.HALF_UP);
+        BigDecimal targetDecimal = baseExercises.multiply(modifier);
+        int targetExercises = targetDecimal.setScale(0, RoundingMode.HALF_UP).intValue();
+        return Math.clamp(targetExercises, 2, 10);
     }
 }

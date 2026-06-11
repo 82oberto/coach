@@ -25,7 +25,7 @@ public class AiRoutingService {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
 
-    // Inizializza il convertitore di Spring AI per forzare lo schema JSON del nostro DTO
+    // initialize Spring AI's output converter to enforce the JSON schema for our DTO
     private final BeanOutputConverter<AiWorkoutJsonDto> outputConverter;
 
     public AiRoutingService(ChatModel chatModel, ObjectMapper objectMapper) {
@@ -35,21 +35,21 @@ public class AiRoutingService {
     }
 
     /**
-     * Genera la struttura tecnica dell'allenamento in un formato JSON strutturato usando Llama 3.
+     * Generates the structured workout plan in a JSON format using Llama 3.
      *
-     * @param userProfile         Il profilo dell'utente con metriche e vincoli fisici.
-     * @param availableCatalogIds La lista degli ID degli esercizi attualmente disponibili nel database.
-     * @return Un oggetto AiWorkoutJsonDto validato e tipizzato.
+     * @param userProfile         The user profile with metrics and physical constraints.
+     * @param availableCatalogIds The list of available exercise IDs in the database.
+     * @return A validated and typed AiWorkoutJsonDto object.
      */
-    public AiWorkoutJsonDto generateWorkoutStructure(UserProfileDto userProfile, List<String> availableCatalogIds) {
+    public AiWorkoutJsonDto generateWorkoutStructure(UserProfileDto userProfile,int targetExercises, List<String> availableCatalogIds) {
         log.info("Starting structured workout generation with Llama 3 for user: {}", userProfile.userId());
 
-        // 1. Definisce le regole di sistema (System Prompt) imponendo vincoli rigidi
+        // 1. Define the system rules (System Prompt) imposing strict constraints
         String systemInstruction ="""
             You are an elite, adaptive fitness AI Coach. Your task is to design a targeted workout session and return a JSON payload that strictly adheres to the requested schema structure.
 
             CRITICAL STRUCTURE AND ID RULES:
-            1. EXERCISE SELECTION: You MUST preferentially choose exercise IDs from this available catalog list: {catalogIds}. Place these references inside the 'exercises' array.
+            1. EXERCISE SELECTION: You MUST preferentially choose exercise IDs from this available catalog list: {catalogIds}. Place these references inside the 'exercises' array. If the catalog list is empty or NO_CATALOG_AVAILABLE, you MUST dynamically provision all exercises using the discovered_exercises array
             2. DYNAMIC PROVISIONING: If and ONLY if a specific movement is absolutely necessary for the user's goals but missing from the catalog, you can invent a new unique string ID (e.g., "ex-custom-squat").
             3. NO ORPHANED IDs (ANTI-CRASH RULE): If you use an exercise ID inside the 'exercises' array that is NOT part of the provided {catalogIds} list, you MUST include a single, complete definition for that exercise inside the 'discovered_exercises' array with the EXACT same 'id'.
             4. FIELD VALIDATION:
@@ -58,6 +58,9 @@ public class AiRoutingService {
 
             USER PROFILE CONSTRAINTS:
                 5. Respect the user's fitness level ({fitnessLevel}/10), training days, and available time ({availableTime} mins).
+                CRITICAL VOLUME RULE:
+                    Based on the user's available time ({availableTime}), you MUST return EXACTLY {targetExercises} exercises in the 'exercises' array.
+                    A workout with less than {targetExercises} or more than {targetExercises} exercises is considered a failure.
                 6. Strictly avoid movements that stress these physical limitations: {limitations}.
                 7. Use only the following available equipment: {equipment}.
 
@@ -66,18 +69,23 @@ public class AiRoutingService {
                 {format}
                 """;
 
-        // 2. Prepara il template iniettando le variabili e le istruzioni di formattazione JSON di Spring AI
+        // 2. Prepare the template by injecting the variables and JSON formatting instructions of Spring AI
         SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemInstruction);
         Prompt prompt = systemPromptTemplate.create(Map.of(
-                "catalogIds", availableCatalogIds,
+                "catalogIds", availableCatalogIds.isEmpty()
+                        ? "NO_CATALOG_AVAILABLE_FOR_THIS_EQUIPMENT"
+                        : String.join(", ", availableCatalogIds),
                 "fitnessLevel", userProfile.fitnessLevel(),
                 "availableTime", userProfile.availableTimeMinutes(),
                 "limitations", userProfile.physicalLimitations().isBlank() ? "None" : userProfile.physicalLimitations(),
-                "equipment", userProfile.equipment(),
-                "format", outputConverter.getFormat() // Inietta automaticamente lo schema JSON atteso
+                "equipment", userProfile.equipment().isEmpty() ? "BODYWEIGHT" : String.join(", ", userProfile.equipment()),
+                "targetExercises", targetExercises,
+                "format", outputConverter.getFormat()
         ));
 
-        // 3. Configura le opzioni di Llama 3 (Sintassi corretta per la versione Milestone)
+        log.debug("Constructed system prompt for Llama 3: {}", prompt.getInstructions());
+
+        // 3. Configure the options for Llama 3
         OpenAiChatOptions llamaOptions = OpenAiChatOptions.builder()
                 .model("meta-llama/llama-3-8b-instruct")
                 .temperature(0.1)
@@ -86,7 +94,6 @@ public class AiRoutingService {
                         .build())
                 .build();
 
-        // Unisce il prompt generato con le opzioni specifiche del modello
         Prompt finalPrompt = new Prompt(prompt.getInstructions(), llamaOptions);
 
         // 4. Esegue la chiamata all'AI e parsa automaticamente il risultato
@@ -103,13 +110,13 @@ public class AiRoutingService {
     }
 
     /**
-     * Genera un messaggio motivazionale fluido ed empatico usando Gemma 2.
+     * Generates a fluid and empathetic motivational message.
      *
-     * @param userProfile Il contesto del profilo utente per personalizzare il tono.
-     * @return Una stringa di testo normale contenente il messaggio motivazionale del coach.
+     * @param userProfile The user profile context to personalize the tone.
+     * @return A plain text string containing the motivational message from the coach.
      */
     public String generateMotivationalMessage(UserProfileDto userProfile) {
-        log.info("Generating motivational message with Gemma 2");
+        log.info("Generating motivational message");
 
         String userContextJson;
         try {
@@ -124,10 +131,9 @@ public class AiRoutingService {
             Focus on consistency and adapting to their lifestyle. Keep it under 3 sentences. No markdown formatting, just plain text.
             """.formatted(userContextJson);
 
-        // Configura le opzioni per Gemma 2 (Rimossi i prefissi "with" obsoleti)
         OpenAiChatOptions gemmaOptions = OpenAiChatOptions.builder()
-                .model("google/gemma-2-9b-it")
-                .temperature(0.7) // Temperatura più alta per dare fluidità e carattere al testo
+                .model("deepseek/deepseek-v4-flash")
+                .temperature(0.7)
                 .build();
 
         Prompt finalPrompt = new Prompt(promptText, gemmaOptions);
@@ -135,7 +141,7 @@ public class AiRoutingService {
         try {
             return chatModel.call(finalPrompt).getResult().getOutput().getText().trim();
         } catch (Exception e) {
-            log.warn("Gemma 2 encountered an issue. Returning a default fallback motivational message.", e);
+            log.warn("this model encountered an issue. Returning a default fallback motivational message.", e);
             return "Let's crush today's workout! Consistency is key.";
         }
     }
