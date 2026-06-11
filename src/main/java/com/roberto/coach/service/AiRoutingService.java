@@ -96,12 +96,12 @@ public class AiRoutingService {
 
         Prompt finalPrompt = new Prompt(prompt.getInstructions(), llamaOptions);
 
-        // 4. Esegue la chiamata all'AI e parsa automaticamente il risultato
+        // 4. Execute the call to the AI and automatically parse the result
         try {
             String rawJsonResponse = chatModel.call(finalPrompt).getResult().getOutput().getText();
             log.debug("Raw JSON response received from Llama 3: {}", rawJsonResponse);
 
-            // Converte la stringa JSON direttamente nel nostro Java Record tipizzato
+            // Convert the JSON string directly into our typed Java Record
             return outputConverter.convert(rawJsonResponse);
         } catch (Exception e) {
             log.error("Error during Llama 3 workout generation or parsing", e);
