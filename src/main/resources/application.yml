@@ -5,10 +5,10 @@ spring:
   ai:
     openai:
       api-key: ${OPENROUTER_API_KEY}
-      base-url: https://openrouter.ai/api/v1
+      base-url: https://openrouter.ai/api
       chat:
         options:
-        model: meta-llama/llama-3-8b-instruct
+          model: meta-llama/llama-3-8b-instruct
 
   datasource:
     url: jdbc:postgresql://localhost:5432/coach_db

@@ -45,18 +45,26 @@ public class AiRoutingService {
         log.info("Starting structured workout generation with Llama 3 for user: {}", userProfile.userId());
 
         // 1. Definisce le regole di sistema (System Prompt) imponendo vincoli rigidi
-        String systemInstruction = """
-            You are an elite, adaptive fitness AI Coach. Your task is to design a targeted workout session.
-            
-            CRITICAL RULES:
-            1. You MUST preferentially choose exercise IDs from this available catalog list: {catalogIds}.
-            2. If and ONLY if a specific movement is absolutely necessary for the user's goals but missing from the catalog, you can invent a new one, but you MUST place it in the 'discovered_exercises' array.
-            3. Respect the user's fitness level ({fitnessLevel}/10), training days, and available time ({availableTime} mins).
-            4. Strictly avoid movements that stress these physical limitations: {limitations}.
-            5. Use only the following available equipment: {equipment}.
-            
-            {format}
-            """;
+        String systemInstruction ="""
+            You are an elite, adaptive fitness AI Coach. Your task is to design a targeted workout session and return a JSON payload that strictly adheres to the requested schema structure.
+
+            CRITICAL STRUCTURE AND ID RULES:
+            1. EXERCISE SELECTION: You MUST preferentially choose exercise IDs from this available catalog list: {catalogIds}. Place these references inside the 'exercises' array.
+            2. DYNAMIC PROVISIONING: If and ONLY if a specific movement is absolutely necessary for the user's goals but missing from the catalog, you can invent a new unique string ID (e.g., "ex-custom-squat").
+            3. NO ORPHANED IDs (ANTI-CRASH RULE): If you use an exercise ID inside the 'exercises' array that is NOT part of the provided {catalogIds} list, you MUST include a single, complete definition for that exercise inside the 'discovered_exercises' array with the EXACT same 'id'.
+            4. FIELD VALIDATION:
+                - Every item in the 'exercises' array must strictly contain only: 'id', 'sets', 'reps', and 'rest_seconds'.
+                - Every item in the 'discovered_exercises' array must strictly contain only: 'id', 'name', 'muscle_group' (UPPERCASE, e.g., "LEGS", "CHEST"), and 'equipment_needed' (UPPERCASE, e.g., "NONE", "DUMBBELL").
+
+            USER PROFILE CONSTRAINTS:
+                5. Respect the user's fitness level ({fitnessLevel}/10), training days, and available time ({availableTime} mins).
+                6. Strictly avoid movements that stress these physical limitations: {limitations}.
+                7. Use only the following available equipment: {equipment}.
+
+                Before returning the payload, perform a final validation pass: ensure that every single 'id' present in the 'exercises' list is either present in the provided catalog OR has its full metadata declared inside 'discovered_exercises'. Missing this mapping will crash the backend application.
+
+                {format}
+                """;
 
         // 2. Prepara il template iniettando le variabili e le istruzioni di formattazione JSON di Spring AI
         SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemInstruction);
