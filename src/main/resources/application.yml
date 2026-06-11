@@ -1,0 +1,31 @@
+logging:
+  level:
+    root: INFO
+    com.roberto.coach: DEBUG
+
+spring:
+  application:
+    name: coach
+
+  ai:
+    openai:
+      api-key: ${OPENROUTER_API_KEY}
+      base-url: https://openrouter.ai/api
+      chat:
+        options:
+          model: meta-llama/llama-3-8b-instruct
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/coach_db
+    username: postgres
+    password: psql8586
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
