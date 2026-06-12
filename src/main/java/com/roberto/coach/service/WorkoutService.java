@@ -3,10 +3,7 @@ package com.roberto.coach.service;
 import com.roberto.coach.dto.AiWorkoutJsonDto;
 import com.roberto.coach.dto.UserProfileDto;
 import com.roberto.coach.dto.WorkoutResponseDto;
-import com.roberto.coach.model.UserProfile;
-import com.roberto.coach.model.WorkoutPlan;
-import com.roberto.coach.model.WorkoutExercise;
-import com.roberto.coach.model.ExerciseCatalog;
+import com.roberto.coach.model.*;
 import com.roberto.coach.repository.UserProfileRepository;
 import com.roberto.coach.repository.WorkoutPlanRepository;
 import com.roberto.coach.repository.ExerciseCatalogRepository;
@@ -43,10 +40,24 @@ public class WorkoutService {
 
         UserProfileDto userProfileDto = userService.findByUserId(userId);
 
+        TrainingLocation location = userProfileDto.preferredLocation();
+
         List<String> availableCatalogIds = exerciseCatalogRepository.findAll().stream()
-                .filter(exercise -> userProfileDto.equipment().contains(exercise.getEquipmentNeeded()))
+                .filter(exercise -> {
+
+                    if (TrainingLocation.HOME.equals(location) && !exercise.isHomeFriendly()) {
+                        return false;
+                    }
+
+                    if (TrainingLocation.GYM.equals(location)) {
+                        return true;
+                    }
+
+                    return userProfileDto.equipment().contains(exercise.getEquipmentNeeded());
+                })
                 .map(ExerciseCatalog::getId)
                 .toList();
+
 
         int targetExercises = calculateTargetExercises(userProfileEntity);
         log.debug("Target exercises: {}", targetExercises);
@@ -113,7 +124,8 @@ public class WorkoutService {
                         e.getExerciseCatalog().getEquipmentNeeded(),
                         e.getSets(),
                         e.getReps(),
-                        e.getRestSeconds()
+                        e.getRestSeconds(),
+                        e.getExerciseCatalog().isHomeFriendly()
                 )).toList();
 
         return new WorkoutResponseDto(

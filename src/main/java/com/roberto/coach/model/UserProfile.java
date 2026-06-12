@@ -46,4 +46,9 @@ public class UserProfile {
 
     @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preferred_location", nullable = false)
+    @Builder.Default
+    private TrainingLocation preferredLocation = TrainingLocation.GYM;
 }

@@ -62,8 +62,10 @@ public class UserService {
         // Map updated fields from DTO to Entity
         userProfile.setFitnessLevel(dto.fitnessLevel());
         userProfile.setAvailableTimeMinutes(dto.availableTimeMinutes());
+        userProfile.setTrainingDaysPerWeek(dto.trainingDaysPerWeek());
         userProfile.setPhysicalLimitations(dto.physicalLimitations());
         userProfile.setEquipment(equipments);
+        userProfile.setPreferredLocation(dto.preferredLocation());
 
         UserProfile savedEntity = userRepository.save(userProfile);
         log.info("Successfully persisted profile changes for user ID: {}", dto.userId());
@@ -99,8 +101,8 @@ public class UserService {
                 entity.getAvailableTimeMinutes(),
                 entity.getSpeedModifier(),
                 entity.getEquipment(),
-                entity.getPhysicalLimitations()
-
+                entity.getPhysicalLimitations(),
+                entity.getPreferredLocation()
         );
     }
 }

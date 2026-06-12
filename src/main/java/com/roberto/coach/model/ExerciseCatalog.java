@@ -23,4 +23,8 @@ public class ExerciseCatalog {
 
     @Column(name = "equipment_needed", nullable = false, length = 50)
     private String equipmentNeeded; // BODYWEIGHT, DUMBBELLS, etc.
+
+    @Column(name = "is_home_friendly", nullable = false)
+    @Builder.Default
+    private boolean homeFriendly = true;
 }

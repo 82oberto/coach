@@ -20,6 +20,7 @@ public record WorkoutResponseDto(
             @JsonProperty("equipment_needed") String equipmentNeeded,
             @JsonProperty("sets") int sets,
             @JsonProperty("reps") int reps,
-            @JsonProperty("rest_seconds") int restSeconds
+            @JsonProperty("rest_seconds") int restSeconds,
+            @JsonProperty("is_home_friendly") boolean isHomeFriendly
     ) {}
 }

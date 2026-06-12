@@ -46,26 +46,43 @@ public class AiRoutingService {
 
         // 1. Define the system rules (System Prompt) imposing strict constraints
         String systemInstruction ="""
-            You are an elite, adaptive fitness AI Coach. Your task is to design a targeted workout session and return a JSON payload that strictly adheres to the requested schema structure.
-
-            CRITICAL STRUCTURE AND ID RULES:
-            1. EXERCISE SELECTION: You MUST preferentially choose exercise IDs from this available catalog list: {catalogIds}. Place these references inside the 'exercises' array. If the catalog list is empty or NO_CATALOG_AVAILABLE, you MUST dynamically provision all exercises using the discovered_exercises array
-            2. DYNAMIC PROVISIONING: If and ONLY if a specific movement is absolutely necessary for the user's goals but missing from the catalog, you can invent a new unique string ID (e.g., "ex-custom-squat").
-            3. NO ORPHANED IDs (ANTI-CRASH RULE): If you use an exercise ID inside the 'exercises' array that is NOT part of the provided {catalogIds} list, you MUST include a single, complete definition for that exercise inside the 'discovered_exercises' array with the EXACT same 'id'.
-            4. FIELD VALIDATION:
-                - Every item in the 'exercises' array must strictly contain only: 'id', 'sets', 'reps', and 'rest_seconds'.
-                - Every item in the 'discovered_exercises' array must strictly contain only: 'id', 'name', 'muscle_group' (UPPERCASE, e.g., "LEGS", "CHEST"), and 'equipment_needed' (UPPERCASE, e.g., "NONE", "DUMBBELL").
-
-            USER PROFILE CONSTRAINTS:
-                5. Respect the user's fitness level ({fitnessLevel}/10), training days, and available time ({availableTime} mins).
-                CRITICAL VOLUME RULE:
-                    Based on the user's available time ({availableTime}), you MUST return EXACTLY {targetExercises} exercises in the 'exercises' array.
-                    A workout with less than {targetExercises} or more than {targetExercises} exercises is considered a failure.
-                6. Strictly avoid movements that stress these physical limitations: {limitations}.
-                7. Use only the following available equipment: {equipment}.
-
+                You are an elite, adaptive fitness AI Coach. Your task is to design a targeted workout session and return a JSON payload that strictly adheres to the requested schema structure.
+                
+                CRITICAL STRUCTURE AND ID RULES:
+                 1. EXERCISE SELECTION & VARIETY: The available catalog list {catalogIds} is your primary baseline. To prevent workout monotony, you SHOULD actively blend exercises from the catalog with freshly provisioned movements. Do not simply loop through the same catalog IDs.
+                 2. DYNAMIC PROVISIONING: You have full creative freedom to invent new unique string IDs (e.g., "ex-custom-squat") to introduce variety, progressive variations, or specific movement angles that provide a fresh training stimulus.
+                 3. NO SEMANTIC DUPLICATES OR SYNONYMS: When inventing exercises in 'discovered_exercises', you are STRICTLY FORBIDDEN from creating synonymous names for identical movements just to bypass the variety rule. For example, do not rename a standard "Push-up" to "Classic Press-up", "Floor Chest Press", or "Bodyweight Chest Press". Every newly provisioned exercise must represent a biomechanically distinct movement or a genuine mechanical progression not already covered.
+                 4. NO ORPHANED IDs (ANTI-CRASH RULE): If you use an exercise ID inside the 'exercises' array that is NOT part of the provided {catalogIds} list, you MUST include a single, complete definition for that exercise inside the 'discovered_exercises' array with the EXACT same 'id'.
+                 5. FIELD VALIDATION:
+                  - Every item in the 'exercises' array must strictly contain only: 'id', 'sets', 'reps', and 'rest_seconds'.
+                  - Every item in the 'discovered_exercises' array must strictly contain only: 'id', 'name', 'muscle_group' (UPPERCASE, e.g., "LEGS", "CHEST"), 'equipment_needed' (UPPERCASE, e.g., "NONE", "DUMBBELL"), and 'is_home_friendly' (boolean).
+                
+                USER PROFILE CONSTRAINTS:
+                 6. Respect the user's fitness level ({fitnessLevel}/10), training days, and available time ({availableTime} mins).
+                  CRITICAL VOLUME RULE:
+                   Based on the user's available time ({availableTime}), you MUST return EXACTLY {targetExercises} exercises in the 'exercises' array.
+                   A workout with less than {targetExercises} or more than {targetExercises} exercises is considered a failure.
+                 7. Strictly avoid movements that stress these physical limitations: {limitations}.
+                 8. Use only the following available equipment: {equipment}.
+                9. CURRENT TRAINING LOCATION: The user is training at {trainingLocation}.
+                
+                CRITICAL EQUIPMENT PROPORTIONAL DISTRIBUTION RULE:
+                        - You MUST maximize the usage of the user's available equipment list: {equipment}.\s
+                        - You are REQUIRED to split the total {targetExercises} exercises as evenly as possible between the specific items listed in {equipment}.
+                        - EXACT PROPORTIONAL EXAMPLE: If {targetExercises} is 6, and {equipment} contains [BODYWEIGHT, DUMBBELL, BAND], you have 3 available categories: Bodyweight, Dumbbells, and Bands. You MUST mathematically distribute the workout to include exactly 2 bodyweight exercises, 2 dumbbell exercises, and 2 band exercises.\s
+                        - If {targetExercises} cannot be divided perfectly by the number of equipment categories, distribute the remainder as evenly as possible, but ensure every single equipment type in {equipment} is utilized at least once. Do not overload the routine with bodyweight if other equipment is available.
+                
+                CRITICAL 'IS_HOME_FRIENDLY' RULES FOR DISCOVERED EXERCISES:  
+                 - If CURRENT TRAINING LOCATION is HOME, you CAN and SHOULD utilize the equipment provided in the {equipment} list (e.g., DUMBBELLS, BANDS) to design the workout.\s
+                     - Exercises utilizing portable equipment like dumbbells, kettlebells, or resistance bands MUST be marked as 'is_home_friendly': true.
+                     - You are ONLY forbidden from using heavy commercial gym machinery, cables, or fixed structures (e.g., Leg Press, Lat Pulldown) when the location is HOME. Those heavy machine exercises are 'is_home_friendly': false.
+                     - If the {equipment} list contains equipment, do not default to bodyweight-only exercises just because the location is HOME. Maximize the use of the allowed {equipment} that is home-friendly.
+                 - If CURRENT TRAINING LOCATION is GYM or OUTDOOR, evaluate 'is_home_friendly' logically:\s
+                        Set it to TRUE if the movement can be done with bodyweight, dumbbells, or bands (e.g., Pushups, Dumbbell Rows).
+                        Set it to FALSE if it requires large commercial gym machinery, cables, or fixed structures (e.g., Leg Press, Lat Pulldown, Smith Machine).
+                
                 Before returning the payload, perform a final validation pass: ensure that every single 'id' present in the 'exercises' list is either present in the provided catalog OR has its full metadata declared inside 'discovered_exercises'. Missing this mapping will crash the backend application.
-
+                
                 {format}
                 """;
 
@@ -80,6 +97,7 @@ public class AiRoutingService {
                 "limitations", userProfile.physicalLimitations().isBlank() ? "None" : userProfile.physicalLimitations(),
                 "equipment", userProfile.equipment().isEmpty() ? "BODYWEIGHT" : String.join(", ", userProfile.equipment()),
                 "targetExercises", targetExercises,
+                "trainingLocation", userProfile.preferredLocation(),
                 "format", outputConverter.getFormat()
         ));
 
@@ -87,7 +105,7 @@ public class AiRoutingService {
 
         // 3. Configure the options for Llama 3
         OpenAiChatOptions llamaOptions = OpenAiChatOptions.builder()
-                .model("meta-llama/llama-3-8b-instruct")
+                .model("deepseek/deepseek-chat")
                 .temperature(0.1)
                 .responseFormat(ResponseFormat.builder()
                         .type(ResponseFormat.Type.JSON_OBJECT)
@@ -132,7 +150,7 @@ public class AiRoutingService {
             """.formatted(userContextJson);
 
         OpenAiChatOptions gemmaOptions = OpenAiChatOptions.builder()
-                .model("deepseek/deepseek-v4-flash")
+                .model("openai/gpt-5-mini")
                 .temperature(0.7)
                 .build();
 
