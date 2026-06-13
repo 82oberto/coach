@@ -20,6 +20,7 @@ public record AiWorkoutJsonDto(
             @JsonProperty("name") String name,
             @JsonProperty("muscle_group") String muscleGroup,
             @JsonProperty("equipment_needed") String equipmentNeeded,
-            @JsonProperty("is_home_friendly") boolean isHomeFriendly
+            @JsonProperty("is_home_friendly") boolean isHomeFriendly,
+            @JsonProperty("description") String description
     ) {}
 }

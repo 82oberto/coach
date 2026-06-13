@@ -27,4 +27,7 @@ public class ExerciseCatalog {
     @Column(name = "is_home_friendly", nullable = false)
     @Builder.Default
     private boolean homeFriendly = true;
+
+    @Column (length = 100)
+    private String description;
 }
