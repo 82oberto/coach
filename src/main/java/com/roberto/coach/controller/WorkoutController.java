@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/workouts")
 @RequiredArgsConstructor
@@ -23,10 +25,10 @@ public class WorkoutController {
      * @return A ResponseEntity containing the fully populated WorkoutResponseDto payload.
      */
     @GetMapping("/generate/{userId}")
-    public ResponseEntity<WorkoutResponseDto> generateWorkout(@PathVariable String userId) {
+    public ResponseEntity<WorkoutResponseDto> generateWorkout(@PathVariable String userId, @RequestParam List<String> muscleGroup) {
         log.info("REST request received to generate AI workout orchestration for user ID: {}", userId);
 
-        WorkoutResponseDto response = workoutService.generateWorkout(userId);
+        WorkoutResponseDto response = workoutService.generateWorkout(userId, muscleGroup);
 
         return ResponseEntity.ok(response);
     }

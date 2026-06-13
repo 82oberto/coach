@@ -31,7 +31,7 @@ public class WorkoutService {
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
     @Transactional
-    public WorkoutResponseDto generateWorkout(String userId) {
+    public WorkoutResponseDto generateWorkout(String userId, List<String> requestedMuscleGroups) {
         log.info("Initiating database-persisted workout generation pipeline for user ID: {}", userId);
 
         // 1. Fetch managed UserProfile context
@@ -42,8 +42,17 @@ public class WorkoutService {
 
         TrainingLocation location = userProfileDto.preferredLocation();
 
+        List<String> muscleGroups = requestedMuscleGroups.stream()
+                .map(String::toUpperCase)
+                .toList();
+
         List<String> availableCatalogIds = exerciseCatalogRepository.findAll().stream()
                 .filter(exercise -> {
+
+                    String exerciseMuscleGroup = exercise.getMuscleGroup().toUpperCase();
+                    if (!muscleGroups.contains(exerciseMuscleGroup)) {
+                        return false;
+                    }
 
                     if (TrainingLocation.HOME.equals(location) && !exercise.isHomeFriendly()) {
                         return false;
@@ -63,7 +72,7 @@ public class WorkoutService {
         log.debug("Target exercises: {}", targetExercises);
 
         // 3. Generate content via AI Router
-        AiWorkoutJsonDto aiWorkoutDto = aiRoutingService.generateWorkoutStructure(userProfileDto, targetExercises, availableCatalogIds);
+        AiWorkoutJsonDto aiWorkoutDto = aiRoutingService.generateWorkoutStructure(userProfileDto, targetExercises, availableCatalogIds, muscleGroups);
         String motivationalMessage = aiRoutingService.generateMotivationalMessage(userProfileDto);
 
         if (aiWorkoutDto.discoveredExercises() != null && !aiWorkoutDto.discoveredExercises().isEmpty()) {
@@ -75,6 +84,7 @@ public class WorkoutService {
                             .name(discovered.name())
                             .muscleGroup(discovered.muscleGroup())
                             .equipmentNeeded(discovered.equipmentNeeded())
+                            .homeFriendly(discovered.isHomeFriendly())
                             .build();
 
                     exerciseCatalogRepository.save(newCatalogItem);
