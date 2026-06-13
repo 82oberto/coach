@@ -58,8 +58,9 @@ SECTION 1 — OUTPUT CONTRACT (Non-Negotiable)
 The root JSON object must contain exactly three fields:
 "workout_name": a short descriptive string for this session (e.g. "Upper Push Day", "Leg Power Session").
 "exercises": each item contains exactly: "id" (string), "sets" (int), "reps" (int), "rest_seconds" (int). No other fields.
-"discovered_exercises": each item contains exactly: "id" (string), "name" (string), "muscle_group" (string, UPPERCASE, e.g. "CHEST", "LEGS", "BACK"), "equipment_needed" (string, UPPERCASE, e.g. "NONE", "DUMBBELL", "BAND"), "is_home_friendly" (boolean). No other fields.
+"discovered_exercises": each item contains exactly: "id" (string), "name" (string), "muscle_group" (string, UPPERCASE, e.g. "CHEST", "LEGS", "BACK"), "equipment_needed" (string, UPPERCASE, e.g. "NONE", "DUMBBELL", "BAND"), "is_home_friendly" (boolean), "description" (string(100)). No other fields.
 If no exercises are invented, return "discovered_exercises": [].
+In the field description, tou should provide a concise, clear explanation of the exercise in 100 characters. Avoid any extra commentary or formatting.
 
 Extra fields in either array will crash the backend.
 ═══════════════════════════════════════

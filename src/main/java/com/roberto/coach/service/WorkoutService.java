@@ -85,6 +85,7 @@ public class WorkoutService {
                             .muscleGroup(discovered.muscleGroup())
                             .equipmentNeeded(discovered.equipmentNeeded())
                             .homeFriendly(discovered.isHomeFriendly())
+                            .description(discovered.description())
                             .build();
 
                     exerciseCatalogRepository.save(newCatalogItem);
@@ -135,7 +136,8 @@ public class WorkoutService {
                         e.getSets(),
                         e.getReps(),
                         e.getRestSeconds(),
-                        e.getExerciseCatalog().isHomeFriendly()
+                        e.getExerciseCatalog().isHomeFriendly(),
+                        e.getExerciseCatalog().getDescription()
                 )).toList();
 
         return new WorkoutResponseDto(
