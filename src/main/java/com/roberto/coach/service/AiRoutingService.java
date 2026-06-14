@@ -58,7 +58,7 @@ SECTION 1 — OUTPUT CONTRACT (Non-Negotiable)
 The root JSON object must contain exactly three fields:
 "workout_name": a short descriptive string for this session (e.g. "Upper Push Day", "Leg Power Session").
 "exercises": each item contains exactly: "id" (string), "sets" (int), "reps" (int), "rest_seconds" (int). No other fields.
-"discovered_exercises": each item contains exactly: "id" (string), "name" (string), "muscle_group" (string, UPPERCASE, e.g. "CHEST", "LEGS", "BACK"), "equipment_needed" (string, UPPERCASE, e.g. "NONE", "DUMBBELL", "BAND"), "is_home_friendly" (boolean), "description" (string(100)). No other fields.
+"discovered_exercises": each item contains exactly: "id" (string), "name" (string), "muscle_group" (string, UPPERCASE, e.g. "CHEST", "LEGS", "BACK"), "equipment_needed" (string, UPPERCASE, e.g. "NONE", "DUMBBELL", "BAND"), "is_home_friendly" (boolean), "description" (string(100)), "difficulty_level" (string, UPPERCASE, "BEGINNER", "INTERMEDIATE", "ADVANCED"). No other fields.
 If no exercises are invented, return "discovered_exercises": [].
 In the field description, tou should provide a concise, clear explanation of the exercise in 100 characters. Avoid any extra commentary or formatting.
 
@@ -99,6 +99,10 @@ Assign a unique ID not present in the catalog.
 Every invented exercise must be biomechanically distinct — never a synonym or rename of an existing movement. FORBIDDEN example: renaming "Push-up" as "Floor Chest Press" or "Classic Press-up".
 Every invented ID used in "exercises" MUST have a matching full entry in "discovered_exercises".
 Catalog IDs used in "exercises" must NOT appear in "discovered_exercises".
+Assign a difficulty level to each invented exercise based on the user's fitness level:
+Fitness Level 1-3 → BEGINNER
+Fitness Level 4-7 → INTERMEDIATE
+Fitness Level 8-10 → ADVANCED
 
 ═══════════════════════════════════════
 

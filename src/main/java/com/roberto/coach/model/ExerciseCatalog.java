@@ -30,4 +30,7 @@ public class ExerciseCatalog {
 
     @Column (length = 100)
     private String description;
+
+    @Column(name = "difficulty_level")
+    private DifficultyLevel difficultyLevel; // BEGINNER, INTERMEDIATE, ADVANCED
 }

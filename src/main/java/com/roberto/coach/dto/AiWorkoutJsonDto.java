@@ -1,6 +1,8 @@
 package com.roberto.coach.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.roberto.coach.model.DifficultyLevel;
+
 import java.util.List;
 
 public record AiWorkoutJsonDto(
@@ -21,6 +23,7 @@ public record AiWorkoutJsonDto(
             @JsonProperty("muscle_group") String muscleGroup,
             @JsonProperty("equipment_needed") String equipmentNeeded,
             @JsonProperty("is_home_friendly") boolean isHomeFriendly,
-            @JsonProperty("description") String description
+            @JsonProperty("description") String description,
+            @JsonProperty("difficulty_level") DifficultyLevel difficultyLevel
     ) {}
 }

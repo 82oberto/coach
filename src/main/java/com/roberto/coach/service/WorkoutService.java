@@ -42,12 +42,21 @@ public class WorkoutService {
 
         TrainingLocation location = userProfileDto.preferredLocation();
 
+        int level = userProfileDto.fitnessLevel();
+
         List<String> muscleGroups = requestedMuscleGroups.stream()
                 .map(String::toUpperCase)
                 .toList();
 
         List<String> availableCatalogIds = exerciseCatalogRepository.findAll().stream()
                 .filter(exercise -> {
+
+                    DifficultyLevel difficultyLevel = exercise.getDifficultyLevel();
+                    if (!(difficultyLevel == DifficultyLevel.BEGINNER && level <= 3) &&
+                        !(difficultyLevel == DifficultyLevel.INTERMEDIATE && level >= 4 && level <= 7) &&
+                        !(difficultyLevel == DifficultyLevel.ADVANCED && level >= 8)) {
+                        return false;
+                    }
 
                     String exerciseMuscleGroup = exercise.getMuscleGroup().toUpperCase();
                     if (!muscleGroups.contains(exerciseMuscleGroup)) {
@@ -86,6 +95,7 @@ public class WorkoutService {
                             .equipmentNeeded(discovered.equipmentNeeded())
                             .homeFriendly(discovered.isHomeFriendly())
                             .description(discovered.description())
+                            .difficultyLevel(discovered.difficultyLevel())
                             .build();
 
                     exerciseCatalogRepository.save(newCatalogItem);
@@ -137,7 +147,8 @@ public class WorkoutService {
                         e.getReps(),
                         e.getRestSeconds(),
                         e.getExerciseCatalog().isHomeFriendly(),
-                        e.getExerciseCatalog().getDescription()
+                        e.getExerciseCatalog().getDescription(),
+                        e.getExerciseCatalog().getDifficultyLevel()
                 )).toList();
 
         return new WorkoutResponseDto(

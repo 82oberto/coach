@@ -1,6 +1,8 @@
 package com.roberto.coach.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.roberto.coach.model.DifficultyLevel;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,6 +24,7 @@ public record WorkoutResponseDto(
             @JsonProperty("reps") int reps,
             @JsonProperty("rest_seconds") int restSeconds,
             @JsonProperty("is_home_friendly") boolean isHomeFriendly,
-            @JsonProperty("description") String description
+            @JsonProperty("description") String description,
+            @JsonProperty("difficulty_level") DifficultyLevel difficultyLevel
     ) {}
 }
